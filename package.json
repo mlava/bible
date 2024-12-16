@@ -1,0 +1,18 @@
+{
+  "name": "bible",
+  "version": "1.0.0",
+  "description": "Import from the Bible to your Roam Research graph",
+  "main": "index.js",
+  "scripts": {
+    "build": "webpack"
+  },
+  "author": "Mark Lavercombe",
+  "license": "ISC",
+  "devDependencies": {
+    "webpack": "^5.90.0",
+    "webpack-cli": "^5.1.4"
+  },
+  "dependencies": {
+    "izitoast": "^1.4.0"
+  }
+}
