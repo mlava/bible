@@ -457,10 +457,10 @@ export default {
             } else if (evt == "Zigua") {
                 language = "ziw";
             }
-            await searchLanguage();
+            await searchByLanguage();
         }
 
-        async function searchLanguage () {
+        async function searchByLanguage () {
             var url = "https://api.scripture.api.bible/v1/bibles?language=" + language;
             const response = await fetch(url, requestOptions);
             if (response.ok) {
