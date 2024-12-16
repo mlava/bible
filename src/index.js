@@ -467,7 +467,6 @@ export default {
                 var data = await response.json();
                 var data = data.data;
                 bibleList.length = 0;
-                bibleList = [];
                 bibleList.push("Select Here");
                 for (var i = 0; i < data.length; i++) {
                     bibleList.push(data[i].name);
