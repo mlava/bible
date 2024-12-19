@@ -23,6 +23,21 @@
     display: inline;
 }
 
+[data-tag^="bible_quote_verse"] + .rm-highlight {
+    vertical-align: super;
+    font-size: x-small;
+    background-color: inherit;
+    font-weight: bold;
+    display: inline;
+    margin-left: 40px;
+}
+
+[data-tag^="bible_quote"] + .rm-highlight {
+    background-color: inherit;
+    display: inline;
+    margin-left: 40px;
+}
+
 /* izitoast css */
 .bibles, .bibles-info {
     max-width: 70%;
