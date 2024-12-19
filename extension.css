@@ -147,6 +147,10 @@ label.revealIn > input, label.revealIn > select, label.revealIn > select > optio
     font-weight: normal;
 }
 
+.bibles>.iziToast-body .iziToast-inputs>input:not([type=checkbox]):not([type=radio]):not([type=select]) {
+    width: 150% !important;
+}
+
 
 
 /*

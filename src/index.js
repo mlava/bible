@@ -482,6 +482,7 @@ export default {
         }
 
         // command palette commands
+        // searchPrefBible
         extensionAPI.ui.commandPalette.addCommand({
             label: "Search Bible by string",
             callback: () => {
@@ -512,6 +513,7 @@ export default {
             },
         });
 
+        // importBibleSection
         extensionAPI.ui.commandPalette.addCommand({
             label: "Import Bible section",
             callback: () => {
@@ -542,6 +544,7 @@ export default {
             },
         });
 
+        // importBibleSectionChapter
         extensionAPI.ui.commandPalette.addCommand({
             label: "Import Bible section by Chapter",
             callback: () => {
@@ -572,8 +575,9 @@ export default {
             },
         });
 
+        // importBibleSectionSearch
         extensionAPI.ui.commandPalette.addCommand({
-            label: "Search Bible for passage by prompt",
+            label: "Search for and import a Bible section",
             callback: () => {
                 var parentUid = window.roamAlphaAPI.ui.getFocusedBlock()?.["block-uid"];
                 if (parentUid == undefined) {
@@ -582,7 +586,7 @@ export default {
                 } else {
                     window.roamAlphaAPI.updateBlock({ block: { uid: parentUid, string: "Loading...".toString(), open: true } });
                 };
-                searchBiblePassagePrompt().then(string => {
+                importBibleSectionSearch().then(string => {
                     if (string != undefined) {
                         window.roamAlphaAPI.updateBlock({
                             block: {
@@ -602,6 +606,38 @@ export default {
             },
         });
 
+        // importBiblePassage
+        extensionAPI.ui.commandPalette.addCommand({
+            label: "Import a Bible passage or verse",
+            callback: () => {
+                var parentUid = window.roamAlphaAPI.ui.getFocusedBlock()?.["block-uid"];
+                if (parentUid == undefined) {
+                    alert("Please make sure to focus a block before importing from API.Bible");
+                    return;
+                } else {
+                    window.roamAlphaAPI.updateBlock({ block: { uid: parentUid, string: "Loading...".toString(), open: true } });
+                };
+                importBiblePassage().then(string => {
+                    if (string != undefined) {
+                        window.roamAlphaAPI.updateBlock({
+                            block: {
+                                uid: parentUid,
+                                string: string,
+                            }
+                        });
+                    } else {
+                        window.roamAlphaAPI.updateBlock({
+                            block: {
+                                uid: parentUid,
+                                string: "",
+                            }
+                        });
+                    }
+                });
+            },
+        });
+
+        // importRandomBibleVerse
         extensionAPI.ui.commandPalette.addCommand({
             label: "Import Random Bible verse",
             callback: () => {
@@ -633,6 +669,7 @@ export default {
         });
 
         // SmartBlock definitions
+        // importRandomBibleVerse
         const args = {
             text: "IMPORTRANDOMBIBLEVERSE",
             help: "Import a random verse from API.Bible",
@@ -848,9 +885,99 @@ export default {
             }
         }
 
-        // searchBiblePassagePrompt
-        async function searchBiblePassagePrompt() {
-            let promptString = "Enter a passage to import";
+        // importBibleSectionSearch
+        async function importBibleSectionSearch() {
+            let bibleBookList = extensionAPI.settings.get("bibleBookList");
+            let selectString1 = "<select><option value=\"\">Select</option>";
+            for (var i = 0; i < bibleBookList.length; i++) {
+                for (var j = 0; j < bibleBookList[i][4].length; j++) {
+                    selectString1 += "<option value=\"" + bibleBookList[i][4][j][0] + "\">" + bibleBookList[i][4][j][1] + "</option>";
+                }
+            }
+            selectString1 += "</select>";
+            if (selectString1 == "<select><option value=\"\">Select</option></select>") {
+                await prompt("Your chosen Bible doesn't support sections", null, 5, 3000);
+                return;
+            } else {
+                // choose the chapter from which to limit selections
+                let promptString = "From which chapter is your section?";
+                let selectString = "<select><option value=\"\">Select</option>";
+                for (var i = 0; i < bibleBookList.length; i++) {
+                    selectString += "<option value=\"" + bibleBookList[i][0] + "\">" + bibleBookList[i][1] + "</option>";
+                }
+                selectString += "</select>";
+                let searchQuery = await prompt(promptString, selectString, 6);
+                if (searchQuery != "cancelled") {
+                    let selectString2 = "<select><option value=\"\">Select</option>";
+                    for (var i = 0; i < bibleBookList.length; i++) {
+                        if (bibleBookList[i][0] == searchQuery) {
+                            for (var j = 0; j < bibleBookList[i][4].length; j++) {
+                                selectString2 += "<option value=\"" + bibleBookList[i][4][j][0] + "\">" + bibleBookList[i][4][j][1] + "</option>";
+                            }
+                        }
+                    }
+                    selectString2 += "</select>";
+                    // get the section
+                    let promptString2 = "Select a section to import";
+                    let searchQuery2 = await prompt(promptString2, selectString2, 6);
+                    if (searchQuery2 != "cancelled") {
+                        var url = "https://api.scripture.api.bible/v1/bibles/" + bibleId + "/sections/" + searchQuery2 + "?content-type=json&include-notes=false&include-titles=true&include-chapter-numbers=true&include-verse-numbers=true&include-verse-spans=false";
+                        const response = await fetch(url, requestOptions);
+                        if (response.ok) {
+                            var data = await response.json();
+                            let title = data.data.title;
+                            var content = data.data.content;
+                            let string = "> **" + title + "**\n\n";
+                            for (var i = 0; i < content.length; i++) {
+                                if (content[i].attrs.style == "c") {
+                                    string += "#bible_chapter^^" + content[i].items[0].text + "^^ ";
+                                } else if (content[i].attrs.style == "m" || content[i].attrs.style == "q1") {
+                                    for (var j = 0; j < content[i].items.length; j++) {
+                                        if (content[i].items[j].attrs.style == "v") {
+                                            if (content[i].items[j].items[0].text != "1") {
+                                                string += "#bible_verse^^" + content[i].items[j].items[0].text + "^^ ";
+                                            }
+                                        } else {
+                                            string += content[i].items[j].text;
+                                        }
+                                    }
+                                    string += "\n\n";
+                                }
+                            }
+                            var reference = "";
+                            for (var i = 0; i < bibleBookList.length; i++) {
+                                let bookId = searchQuery.split(".")[0];
+                                if (bookId == bibleBookList[i][0]) {
+                                    reference += "" + bibleBookList[i][1] + " ";
+                                }
+                            }
+
+                            let chapter = data.data.chapterId.split(".")[1];
+                            reference += chapter + ":";
+                            let firstVerse = data.data.firstVerseId.split(".")[2];
+                            let lastVerse = data.data.lastVerseId.split(".")[2];
+                            reference += firstVerse + "-" + lastVerse;
+
+                            string += "" + reference + "";
+                            return string;
+                        } else {
+                            await prompt("Import from API.Bible failed", null, 5, 3000);
+                            return;
+                        }
+                    } else {
+                        await prompt("You cancelled your search", null, 5, 3000);
+                        return;
+                    }
+                } else {
+                    await prompt("You cancelled your search", null, 5, 3000);
+                    return;
+                }
+            }
+        }
+
+        // importBiblePassage
+        async function importBiblePassage() {
+            let promptString = "Enter a passage or verse to import";
             let bibleBookList = extensionAPI.settings.get("bibleBookList");
 
             let selectString = "<select><option value=\"\">Select</option>";
@@ -861,18 +988,22 @@ export default {
             let searchQuery = await prompt(promptString, selectString, 4);
             if (searchQuery != "cancelled") {
                 let queryString = searchQuery[0] + "." + searchQuery[1];
-                if (searchQuery[2] != '') {
+                if (searchQuery[2] != '' && searchQuery[2] != undefined) {
                     queryString += "." + searchQuery[2];
                 }
                 queryString += "-" + searchQuery[0] + "." + searchQuery[1];
-                if (searchQuery[3] != '') {
+                if (searchQuery[3] != '' && searchQuery[3] != undefined) {
                     queryString += "." + searchQuery[3];
+                } else if (searchQuery[2] != undefined && searchQuery[3] == undefined) {
+                    queryString += "." + searchQuery[2];
                 }
+                console.info(queryString);
 
                 var url = "https://api.scripture.api.bible/v1/bibles/" + bibleId + "/passages/" + queryString + "?content-type=json&include-notes=false&include-titles=true&include-chapter-numbers=true&include-verse-numbers=true&include-verse-spans=false&use-org-id=false";
                 const response = await fetch(url, requestOptions);
                 if (response.ok) {
                     var data = await response.json();
+                    console.info(data);
                     let reference = data.data.reference;
                     var content = data.data.content;
                     let string = "> ";
@@ -880,16 +1011,18 @@ export default {
                         if (content[i].attrs.style == "c") {
                             string += "#bible_chapter^^" + content[i].items[0].text + "^^ ";
                         } else {
-                            for (var j = 0; j < content[i].items.length; j++) {
-                                if (content[i].items[j].attrs.style == "v") {
-                                    if (content[i].items[j].items[0].text != "1") {
-                                        string += "#bible_verse^^" + content[i].items[j].items[0].text + "^^ ";
+                            if (content[i].attrs.style == "m" || content[i].attrs.style == "p" || content[i].attrs.style == "pmo" || content[i].attrs.style == "q1" || content[i].attrs.style == "q2") {
+                                for (var j = 0; j < content[i].items.length; j++) {
+                                    if (content[i].items[j].attrs.style == "v") {
+                                        if (content[i].items[j].items[0].text != "1") {
+                                            string += "#bible_verse^^" + content[i].items[j].items[0].text + "^^ ";
+                                        }
+                                    } else {
+                                        string += content[i].items[j].text;
                                     }
-                                } else {
-                                    string += content[i].items[j].text;
                                 }
+                                string += "\n\n";
                             }
-                            string += "\n\n";
                         }
                     }
 
@@ -950,85 +1083,7 @@ export default {
 
 // helper functions
 async function prompt(string, selectString, type, duration) {
-    if (type == 1) {
-        return new Promise((resolve) => {
-            iziToast.question({
-                theme: 'light',
-                color: 'black',
-                layout: 2,
-                class: 'bibles',
-                drag: false,
-                timeout: false,
-                close: false,
-                overlay: true,
-                title: "API.Bible",
-                message: string,
-                position: 'center',
-                buttons: [
-                    ['<button>Yes</button>', function (instance, toast, button, e, inputs) {
-                        instance.hide({ transitionOut: 'fadeOut' }, toast, 'button');
-                        resolve(true);
-                    }, false], // true to focus
-                    [
-                        "<button>No</button>",
-                        function (instance, toast, button, e) {
-                            instance.hide({ transitionOut: "fadeOut" }, toast, "button");
-                            resolve(false);
-                        },
-                    ],
-                ]
-            });
-        })
-    } else if (type == 2) {
-        return new Promise((resolve) => {
-            iziToast.question({
-                theme: 'light',
-                color: 'black',
-                layout: 2,
-                class: 'bibles',
-                drag: false,
-                timeout: false,
-                close: false,
-                overlay: true,
-                displayMode: 2,
-                id: "question",
-                title: "API.Bible",
-                message: string,
-                position: "center",
-                onClosed: function () { resolve("cancelled") },
-                inputs: [
-                    [
-                        '<input type="text" placeholder="">',
-                        "keyup",
-                        function (instance, toast, input, e) {
-                            if (e.code === "Enter") {
-                                instance.hide({ transitionOut: "fadeOut" }, toast, "button");
-                                resolve(e.srcElement.value);
-                            }
-                        },
-                        true,
-                    ],
-                ],
-                buttons: [
-                    [
-                        "<button><b>Confirm</b></button>",
-                        async function (instance, toast, button, e, inputs) {
-                            instance.hide({ transitionOut: "fadeOut" }, toast, "button");
-                            resolve(inputs[0].value);
-                        },
-                        false,
-                    ],
-                    [
-                        "<button>Cancel</button>",
-                        async function (instance, toast, button, e) {
-                            instance.hide({ transitionOut: "fadeOut" }, toast, "button");
-                            resolve("cancelled");
-                        },
-                    ],
-                ],
-            });
-        })
-    } else if (type == 3) {
+    if (type == 3) {
         return new Promise((resolve) => {
             iziToast.question({
                 theme: 'light',
@@ -1114,7 +1169,7 @@ async function prompt(string, selectString, type, duration) {
                 ]
             });
         })
-    } else if (type == 5) {
+    } else if (type == 5) { // alert
         iziToast.show({
             theme: 'dark',
             message: string,
