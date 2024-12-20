@@ -436,6 +436,7 @@ export default {
                 var data = await response.json();
                 var data = data.data;
                 bibleList.length = 0;
+                bibleList.push("Select Here");
                 for (var i = 0; i < data.length; i++) {
                     bibleList.push(data[i].name);
                 }
@@ -461,7 +462,6 @@ export default {
         // create a preferred bible dataset
         async function createPrefBible(bibleId) {
             var books = [];
-
             var url = "https://api.scripture.api.bible/v1/bibles/" + bibleId + "/books?include-chapters=true&include-chapters-and-sections=true";
             const response = await fetch(url, requestOptions);
             if (response.ok) {
@@ -511,8 +511,8 @@ export default {
                             }
                         });
                     }
+                    document.querySelector("body")?.click();
                 });
-                document.querySelector("body")?.click();
             },
         });
 
@@ -543,8 +543,8 @@ export default {
                             }
                         });
                     }
+                    document.querySelector("body")?.click();
                 });
-                document.querySelector("body")?.click();
             },
         });
 
@@ -575,8 +575,8 @@ export default {
                             }
                         });
                     }
+                    document.querySelector("body")?.click();
                 });
-                document.querySelector("body")?.click();
             },
         });
 
@@ -607,8 +607,8 @@ export default {
                             }
                         });
                     }
+                    document.querySelector("body")?.click();
                 });
-                document.querySelector("body")?.click();
             },
         });
 
@@ -622,7 +622,7 @@ export default {
                     return;
                 } else {
                     window.roamAlphaAPI.updateBlock({ block: { uid: parentUid, string: "Loading...".toString(), open: true } });
-                };
+                }
                 importBiblePassage().then(string => {
                     if (string != undefined) {
                         window.roamAlphaAPI.updateBlock({
@@ -639,14 +639,14 @@ export default {
                             }
                         });
                     }
+                    document.querySelector("body")?.click();
                 });
-                document.querySelector("body")?.click();
             },
         });
 
-        // importRandomBibleVerse
+        // importRandomVerse
         extensionAPI.ui.commandPalette.addCommand({
-            label: "Import Random Bible verse",
+            label: "Import a random Bible verse",
             callback: () => {
                 var parentUid = window.roamAlphaAPI.ui.getFocusedBlock()?.["block-uid"];
                 if (parentUid == undefined) {
@@ -654,35 +654,35 @@ export default {
                     return;
                 } else {
                     window.roamAlphaAPI.updateBlock({ block: { uid: parentUid, string: "Loading...".toString(), open: true } });
-                };
-                importRandomBibleVerse().then(string => {
+                }
+                importRandomVerse().then(async string => {
                     if (string != undefined) {
-                        window.roamAlphaAPI.updateBlock({
+                        await window.roamAlphaAPI.updateBlock({
                             block: {
                                 uid: parentUid,
                                 string: string,
                             }
                         });
                     } else {
-                        window.roamAlphaAPI.updateBlock({
+                        await window.roamAlphaAPI.updateBlock({
                             block: {
                                 uid: parentUid,
                                 string: "",
                             }
                         });
                     }
+                    document.querySelector("body")?.click();
                 });
-                document.querySelector("body")?.click();
             },
         });
 
         // SmartBlock definitions
-        // importRandomBibleVerse
+        // importRandomVerse
         const args = {
-            text: "IMPORTRANDOMBIBLEVERSE",
+            text: "IMPORTRANDOMVERSE",
             help: "Import a random verse from API.Bible",
             handler: (context) => () => {
-                return importRandomBibleVerse();
+                return importRandomVerse();
             },
         };
 
@@ -699,37 +699,14 @@ export default {
 
         // searchPrefBible
         async function searchPrefBible() {
+            let bibleBookList = extensionAPI.settings.get("bibleBookList");
             let promptString = "Enter a search phrase";
             let searchQuery = await prompt(promptString, null, 7);
             var url = "https://api.scripture.api.bible/v1/bibles/" + bibleId + "/search?query=" + encodeURIComponent(searchQuery) + "&limit=100";
             const response = await fetch(url, requestOptions);
             if (response.ok) {
                 var data = await response.json();
-                data = data.data;
-                var versesList = data.verses;
-                if (versesList.length < 1) {
-                    await prompt("There were no results for that search", null, 5, 3000);
-                    return;
-                } else {
-                    promptString = "Which of these verses do you want to import?";
-                    let selectString = "<select><option value=\"\">Select</option>";
-                    for (var i = 0; i < versesList.length; i++) {
-                        selectString += "<option value=\"" + versesList[i].id + "\">" + versesList[i].text + "</option>";
-                    }
-                    selectString += "</select>";
-                    searchQuery = await prompt(promptString, selectString, 3);
-
-                    if (searchQuery != "cancelled") {
-                        for (var i = 0; i < versesList.length; i++) {
-                            if (searchQuery == versesList[i].id) {
-                                return "> " + versesList[i].text + "\n\n" + versesList[i].reference + "";
-                            }
-                        }
-                    } else {
-                        await prompt("You cancelled your search", null, 5, 3000);
-                        return;
-                    }
-                }
+                return await createString(data, bibleBookList, false, true, false);
             } else {
                 await prompt("Your search of API.Bible failed", null, 5, 3000);
                 return;
@@ -757,56 +734,7 @@ export default {
                     const response = await fetch(url, requestOptions);
                     if (response.ok) {
                         var data = await response.json();
-                        let title = data.data.title;
-                        var content = data.data.content;
-                        let string = "> **" + title + "**\n\n";
-                        for (var i = 0; i < content.length; i++) {
-                            if (content[i].attrs.style == "c") {
-                                string += "#bible_chapter^^" + content[i].items[0].text + "^^ ";
-                            } else if (content[i].attrs.style == "q") {
-                                for (var j = 0; j < content[i].items.length; j++) {
-                                    if (content[i].items[j].attrs.style == "v") {
-                                        if (content[i].items[j].items[0].text != "1") {
-                                            string += "#bible_quote_verse^^" + content[i].items[j].items[0].text + "^^ ";
-                                        }
-                                    } else {
-                                        if (j > 0) {
-                                            string += "" + content[i].items[j].text + "";
-                                        } else {
-                                            string += "#bible_quote^^" + content[i].items[j].text + "^^";
-                                        }
-                                    }
-                                }
-                                string += "\n";
-                            } else if (content[i].attrs.style == "m" || content[i].attrs.style == "p" || content[i].attrs.style == "pmo" || content[i].attrs.style == "q1" || content[i].attrs.style == "q2") {
-                                for (var j = 0; j < content[i].items.length; j++) {
-                                    if (content[i].items[j].attrs.style == "v") {
-                                        if (content[i].items[j].items[0].text != "1") {
-                                            string += "#bible_verse^^" + content[i].items[j].items[0].text + "^^ ";
-                                        }
-                                    } else {
-                                        string += content[i].items[j].text;
-                                    }
-                                }
-                                string += "\n\n";
-                            }
-                        }
-                        var reference = "";
-                        for (var i = 0; i < bibleBookList.length; i++) {
-                            let bookId = searchQuery.split(".")[0];
-                            if (bookId == bibleBookList[i][0]) {
-                                reference += "" + bibleBookList[i][1] + " ";
-                            }
-                        }
-
-                        let chapter = data.data.chapterId.split(".")[1];
-                        reference += chapter + ":";
-                        let firstVerse = data.data.firstVerseId.split(".")[2];
-                        let lastVerse = data.data.lastVerseId.split(".")[2];
-                        reference += firstVerse + "-" + lastVerse;
-
-                        string += "" + reference + "";
-                        return string;
+                        return await createString(data, bibleBookList, false, false, false);
                     } else {
                         await prompt("Import from API.Bible failed", null, 5, 3000);
                         return;
@@ -858,56 +786,7 @@ export default {
                         const response = await fetch(url, requestOptions);
                         if (response.ok) {
                             var data = await response.json();
-                            let title = data.data.title;
-                            var content = data.data.content;
-                            let string = "> **" + title + "**\n\n";
-                            for (var i = 0; i < content.length; i++) {
-                                if (content[i].attrs.style == "c") {
-                                    string += "#bible_chapter^^" + content[i].items[0].text + "^^ ";
-                                } else if (content[i].attrs.style == "q") {
-                                    for (var j = 0; j < content[i].items.length; j++) {
-                                        if (content[i].items[j].attrs.style == "v") {
-                                            if (content[i].items[j].items[0].text != "1") {
-                                                string += "#bible_quote_verse^^" + content[i].items[j].items[0].text + "^^ ";
-                                            }
-                                        } else {
-                                            if (j > 0) {
-                                                string += "" + content[i].items[j].text + "";
-                                            } else {
-                                                string += "#bible_quote^^" + content[i].items[j].text + "^^";
-                                            }
-                                        }
-                                    }
-                                    string += "\n";
-                                } else if (content[i].attrs.style == "m" || content[i].attrs.style == "p" || content[i].attrs.style == "pmo" || content[i].attrs.style == "q1" || content[i].attrs.style == "q2") {
-                                    for (var j = 0; j < content[i].items.length; j++) {
-                                        if (content[i].items[j].attrs.style == "v") {
-                                            if (content[i].items[j].items[0].text != "1") {
-                                                string += "#bible_verse^^" + content[i].items[j].items[0].text + "^^ ";
-                                            }
-                                        } else {
-                                            string += content[i].items[j].text;
-                                        }
-                                    }
-                                    string += "\n\n";
-                                }
-                            }
-                            var reference = "";
-                            for (var i = 0; i < bibleBookList.length; i++) {
-                                let bookId = searchQuery.split(".")[0];
-                                if (bookId == bibleBookList[i][0]) {
-                                    reference += "" + bibleBookList[i][1] + " ";
-                                }
-                            }
-
-                            let chapter = data.data.chapterId.split(".")[1];
-                            reference += chapter + ":";
-                            let firstVerse = data.data.firstVerseId.split(".")[2];
-                            let lastVerse = data.data.lastVerseId.split(".")[2];
-                            reference += firstVerse + "-" + lastVerse;
-
-                            string += "" + reference + "";
-                            return string;
+                            return await createString(data, bibleBookList, false, false, false);
                         } else {
                             await prompt("Import from API.Bible failed", null, 5, 3000);
                             return;
@@ -959,56 +838,7 @@ export default {
                         const response = await fetch(url, requestOptions);
                         if (response.ok) {
                             var data = await response.json();
-                            let title = data.data.title;
-                            var content = data.data.content;
-                            let string = "> **" + title + "**\n\n";
-                            for (var i = 0; i < content.length; i++) {
-                                if (content[i].attrs.style == "c") {
-                                    string += "#bible_chapter^^" + content[i].items[0].text + "^^ ";
-                                } else if (content[i].attrs.style == "q") {
-                                    for (var j = 0; j < content[i].items.length; j++) {
-                                        if (content[i].items[j].attrs.style == "v") {
-                                            if (content[i].items[j].items[0].text != "1") {
-                                                string += "#bible_quote_verse^^" + content[i].items[j].items[0].text + "^^ ";
-                                            }
-                                        } else {
-                                            if (j > 0) {
-                                                string += "" + content[i].items[j].text + "";
-                                            } else {
-                                                string += "#bible_quote^^" + content[i].items[j].text + "^^";
-                                            }
-                                        }
-                                    }
-                                    string += "\n";
-                                } else if (content[i].attrs.style == "m" || content[i].attrs.style == "p" || content[i].attrs.style == "pmo" || content[i].attrs.style == "q1" || content[i].attrs.style == "q2") {
-                                    for (var j = 0; j < content[i].items.length; j++) {
-                                        if (content[i].items[j].attrs.style == "v") {
-                                            if (content[i].items[j].items[0].text != "1") {
-                                                string += "#bible_verse^^" + content[i].items[j].items[0].text + "^^ ";
-                                            }
-                                        } else {
-                                            string += content[i].items[j].text;
-                                        }
-                                    }
-                                    string += "\n\n";
-                                }
-                            }
-                            var reference = "";
-                            for (var i = 0; i < bibleBookList.length; i++) {
-                                let bookId = data.data.bookId;
-                                if (bookId == bibleBookList[i][0]) {
-                                    reference += "" + bibleBookList[i][1] + " ";
-                                }
-                            }
-
-                            let chapter = data.data.chapterId.split(".")[1];
-                            reference += chapter + ":";
-                            let firstVerse = data.data.firstVerseId.split(".")[2];
-                            let lastVerse = data.data.lastVerseId.split(".")[2];
-                            reference += firstVerse + "-" + lastVerse;
-
-                            string += "" + reference + "";
-                            return string;
+                            return await createString(data, bibleBookList, false, false, false);
                         } else {
                             await prompt("Import from API.Bible failed", null, 5, 3000);
                             return;
@@ -1051,47 +881,7 @@ export default {
                 const response = await fetch(url, requestOptions);
                 if (response.ok) {
                     var data = await response.json();
-                    let reference = data.data.reference;
-                    var content = data.data.content;
-                    console.info(content);
-                    let string = "> ";
-                    for (var i = 0; i < content.length; i++) {
-                        if (content[i].attrs.style == "c") {
-                            string += "#bible_chapter^^" + content[i].items[0].text + "^^ ";
-                        } else {
-                            if (content[i].attrs.style == "m" || content[i].attrs.style == "p" || content[i].attrs.style == "pmo" || content[i].attrs.style == "q1" || content[i].attrs.style == "q2") {
-                                for (var j = 0; j < content[i].items.length; j++) {
-                                    if (content[i].items[j].attrs.style == "v") {
-                                        if (content[i].items[j].items[0].text != "1") {
-                                            string += "#bible_verse^^" + content[i].items[j].items[0].text + "^^ ";
-                                        }
-                                    } else {
-                                        string += content[i].items[j].text;
-                                    }
-                                }
-                                string += "\n\n";
-                            } else if (content[i].attrs.style == "q") {
-                                for (var j = 0; j < content[i].items.length; j++) {
-                                    if (content[i].items[j].attrs.style == "v") {
-                                        if (content[i].items[j].items[0].text != "1") {
-                                            string += "#bible_quote_verse^^" + content[i].items[j].items[0].text + "^^ ";
-                                        }
-                                    } else {
-                                        if (j > 0) {
-                                            string += "" + content[i].items[j].text + "";
-                                        } else {
-                                            string += "#bible_quote^^" + content[i].items[j].text + "^^";
-                                        }
-                                    }
-                                }
-                                string += "\n";
-                            }
-                        }
-                    }
-
-                    string += "" + reference + "";
-                    console.info(string);
-                    return string;
+                    return await createString(data, bibleBookList, true, false, false);
                 } else {
                     await prompt("Your search of API.Bible failed", null, 5, 3000);
                     return;
@@ -1102,8 +892,8 @@ export default {
             }
         }
 
-        // importRandomBibleVerse
-        async function importRandomBibleVerse() {
+        // importRandomVerse
+        async function importRandomVerse() {
             let bibleBookList = extensionAPI.settings.get("bibleBookList");
             var randomBook = bibleBookList[Math.floor(Math.random() * bibleBookList.length)];
             var randomChapter = Math.floor(Math.random() * randomBook[3]);
@@ -1117,36 +907,11 @@ export default {
                 var data = await response.json();
                 data = data.data;
                 var randomVerse = data[Math.floor(Math.random() * data.length)];
-
                 var url1 = "https://api.scripture.api.bible/v1/bibles/" + bibleId + "/verses/" + randomVerse.id + "?content-type=json&include-notes=false&include-titles=true&include-chapter-numbers=false&include-verse-numbers=true&include-verse-spans=false&use-org-id=false";
                 const response1 = await fetch(url1, requestOptions);
                 if (response1.ok) {
                     var data1 = await response1.json();
-                    data1 = data1.data;
-                    var content = data1.content;
-                    console.info(content);
-                    var reference = data1.reference;
-                    let string = "> ";
-                    for (var i = 0; i < content.length; i++) {
-                        if (content[i].attrs.style == "c") {
-                            string += "#bible_chapter^^" + content[i].items[0].text + "^^ ";
-                        } else if (content[i].attrs.style != "s") {
-                            for (var j = 0; j < content[i].items.length; j++) {
-                                if (content[i].items[j].attrs.style == "v") {
-                                    if (content[i].items[j].items[0].text != "1") {
-                                        string += "#bible_verse^^" + content[i].items[j].items[0].text + "^^ ";
-                                    }
-                                } else if (content[i].items[j].attrs.hasOwnProperty("verseId") && content[i].items[j].attrs.verseId == randomVerse.id) {
-                                    string += content[i].items[j].text;
-                                } else {
-                                    string += content[i].items[j].items[0].text;
-                                }
-                            }
-                            string += "\n\n";
-                        }
-                    }
-                    string += "" + reference + "";
-                    return string;
+                    return await createString(data1, bibleBookList, true, false, true);
                 } else {
                     await prompt("Failed to get a random verse from API.Bible", null, 5, 3000);
                     return;
@@ -1156,11 +921,115 @@ export default {
                 return;
             }
         }
+
+        // create the string to import
+        async function createString(data, bibleBookList, passage, verseSearch, random) {
+            if (verseSearch) {
+                data = data.data;
+                var versesList = data.verses;
+                if (versesList.length < 1) {
+                    await prompt("There were no results for that search", null, 5, 3000);
+                    return;
+                } else {
+                    var promptString = "Which of these verses do you want to import?";
+                    let selectString = "<select><option value=\"\">Select</option>";
+                    for (var i = 0; i < versesList.length; i++) {
+                        selectString += "<option value=\"" + versesList[i].id + "\">" + versesList[i].text + "</option>";
+                    }
+                    selectString += "</select>";
+                    var searchQuery = await prompt(promptString, selectString, 3);
+
+                    if (searchQuery != "cancelled") {
+                        for (var i = 0; i < versesList.length; i++) {
+                            if (searchQuery == versesList[i].id) {
+                                let verseId = versesList[i].reference.split(":")[1];
+                                return "> #bible_verse^^" + verseId + "^^ " + versesList[i].text + "\n\n" + versesList[i].reference + "";
+                            }
+                        }
+                    } else {
+                        await prompt("You cancelled your search", null, 5, 3000);
+                        return;
+                    }
+                }
+            } else {
+                console.info(data, bibleBookList, passage, verseSearch, random);
+                var title;
+                var string = "> ";
+                if (!passage && !random) {
+                    title = data.data.title;
+                    string += "**" + title + "**\n\n";
+                }
+                var content = data.data.content;
+                for (var i = 0; i < content.length; i++) {
+                    if (content[i].attrs.style == "c") {
+                        string += "#bible_chapter^^" + content[i].items[0].text + "^^ ";
+                    } else if (content[i].attrs.style == "q") {
+                        /*if ((i < content.length - 1 && content[i - 1].attrs.style != "q")) {
+                            string += "\n\n";
+                        }*/
+                        for (var j = 0; j < content[i].items.length; j++) {
+                            if (content[i].items[j].attrs.style == "v") {
+                                if (content[i].items[j].items[0].text != "1") {
+                                    string += "#bible_quote_verse^^" + content[i].items[j].items[0].text + "^^ ";
+                                }
+                            } else {
+                                if (j > 0) {
+                                    string += "" + content[i].items[j].text + "";
+                                } else {
+                                    string += "#bible_quote^^" + content[i].items[j].text + "^^";
+                                }
+                            }
+                        }
+                        string += "\n";
+                        if ((i < content.length - 1 && content[i + 1].attrs.style != "q") || (i == content.length - 1)) {
+                            string += "\n";
+                        }
+                    } else if (content[i].attrs.style != "s" && content[i].attrs.style != "b") {
+                        for (var j = 0; j < content[i].items.length; j++) {
+                            if (content[i].items[j].attrs.style == "v") {
+                                if (content[i].items[j].items[0].text != "1") {
+                                    string += "#bible_verse^^" + content[i].items[j].items[0].text + "^^ ";
+                                } else if (content[i].items[j].items[0].text == "1" && random) {
+                                    string += "#bible_verse^^" + content[i].items[j].items[0].text + "^^ ";
+                                }
+                            } else if (content[i].items[j].attrs.style == "wj") {
+                                string += content[i].items[j].items[0].text;
+                            } else {
+                                string += content[i].items[j].text;
+                            }
+                        }
+                        if ((i < content.length - 1 && content[i + 1].attrs.style != "q") || (i == content.length - 1)) {
+                            string += "\n\n";
+                        }
+                    }
+                }
+                var reference = "";
+                if (passage) {
+                    reference = data.data.reference;
+                } else {
+                    for (var i = 0; i < bibleBookList.length; i++) {
+                        let bookId = data.data.bookId;
+                        if (bookId == bibleBookList[i][0]) {
+                            reference += "" + bibleBookList[i][1] + " ";
+                        }
+                    }
+                    var chapter = data.data.chapterId.split(".")[1];
+                    reference += chapter + ":";
+                    let firstVerse = data.data.firstVerseId.split(".")[2];
+                    let lastVerse = data.data.lastVerseId.split(".")[2];
+                    reference += firstVerse + "-" + lastVerse;
+                }
+
+                string += "" + reference + "";
+                console.info(string);
+                return string;
+            }
+        }
     },
     onunload: () => {
         // remove SmartBlock definitions onunload
         if (window.roamjs?.extension?.smartblocks) {
-            window.roamjs.extension.smartblocks.unregisterCommand("IMPORTRANDOMBIBLEVERSE");
+            window.roamjs.extension.smartblocks.unregisterCommand("IMPORTRANDOMVERSE");
         };
     }
 }
