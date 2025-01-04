@@ -268,7 +268,7 @@ export default {
         };
         
         async function setLanguage(evt) {
-            var language = languageMap[evt];
+            language = languageMap[evt];
             return await searchByLanguage(language);
         }
         
