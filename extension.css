@@ -1,5 +1,4 @@
-/* having applied the SemSchol tag this css hides the tag itself and changes the react image css from default RR behaviour */
-
+/* having applied the bible_ tag this css hides the tag itself */
 [data-tag^="bible_"] {
     display:none !important;  
 }
