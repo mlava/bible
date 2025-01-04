@@ -490,7 +490,7 @@ export default {
             callback: () => {
                 var parentUid = window.roamAlphaAPI.ui.getFocusedBlock()?.["block-uid"];
                 if (parentUid == undefined) {
-                    alert("Please make sure to focus a block before importing from API.Bible");
+                    prompt("Please make sure to focus a block before importing from API.Bible", null, 5, 3000);
                     return;
                 } else {
                     window.roamAlphaAPI.updateBlock({ block: { uid: parentUid, string: "Loading...".toString(), open: true } });
@@ -522,7 +522,7 @@ export default {
             callback: () => {
                 var parentUid = window.roamAlphaAPI.ui.getFocusedBlock()?.["block-uid"];
                 if (parentUid == undefined) {
-                    alert("Please make sure to focus a block before importing from API.Bible");
+                    prompt("Please make sure to focus a block before importing from API.Bible", null, 5, 3000);
                     return;
                 } else {
                     window.roamAlphaAPI.updateBlock({ block: { uid: parentUid, string: "Loading...".toString(), open: true } });
@@ -554,7 +554,7 @@ export default {
             callback: () => {
                 var parentUid = window.roamAlphaAPI.ui.getFocusedBlock()?.["block-uid"];
                 if (parentUid == undefined) {
-                    alert("Please make sure to focus a block before importing from API.Bible");
+                    prompt("Please make sure to focus a block before importing from API.Bible", null, 5, 3000);
                     return;
                 } else {
                     window.roamAlphaAPI.updateBlock({ block: { uid: parentUid, string: "Loading...".toString(), open: true } });
@@ -586,7 +586,7 @@ export default {
             callback: () => {
                 var parentUid = window.roamAlphaAPI.ui.getFocusedBlock()?.["block-uid"];
                 if (parentUid == undefined) {
-                    alert("Please make sure to focus a block before importing from API.Bible");
+                    prompt("Please make sure to focus a block before importing from API.Bible", null, 5, 3000);
                     return;
                 } else {
                     window.roamAlphaAPI.updateBlock({ block: { uid: parentUid, string: "Loading...".toString(), open: true } });
@@ -618,7 +618,7 @@ export default {
             callback: () => {
                 var parentUid = window.roamAlphaAPI.ui.getFocusedBlock()?.["block-uid"];
                 if (parentUid == undefined) {
-                    alert("Please make sure to focus a block before importing from API.Bible");
+                    prompt("Please make sure to focus a block before importing from API.Bible", null, 5, 3000);
                     return;
                 } else {
                     window.roamAlphaAPI.updateBlock({ block: { uid: parentUid, string: "Loading...".toString(), open: true } });
@@ -650,7 +650,7 @@ export default {
             callback: () => {
                 var parentUid = window.roamAlphaAPI.ui.getFocusedBlock()?.["block-uid"];
                 if (parentUid == undefined) {
-                    alert("Please make sure to focus a block before importing from API.Bible");
+                    prompt("Please make sure to focus a block before importing from API.Bible", null, 5, 3000);
                     return;
                 } else {
                     window.roamAlphaAPI.updateBlock({ block: { uid: parentUid, string: "Loading...".toString(), open: true } });
@@ -697,227 +697,323 @@ export default {
             );
         }
 
+        // check config
+        async function checkConfig() {
+            var key;
+            if (extensionAPI.settings.get("bible-apikey") == "" || extensionAPI.settings.get("bible-apikey") == null || extensionAPI.settings.get("bible-apikey") == undefined ) {
+                key = "API";
+                return key;
+            } else if (extensionAPI.settings.get("bible-apikey")) {
+                apiKey = extensionAPI.settings.get("bible-apikey");
+            }
+            if (extensionAPI.settings.get("bible-language") == "" || extensionAPI.settings.get("bible-language") == null || extensionAPI.settings.get("bible-language") == undefined ) {
+                key = "bibleLanguage";
+                return key;
+            } else if (extensionAPI.settings.get("bible-language")) {
+                language = extensionAPI.settings.get("bible-language");
+            }
+            if (extensionAPI.settings.get("bibleId") == "" || extensionAPI.settings.get("bibleId") == null || extensionAPI.settings.get("bibleId") == undefined ) {
+                key = "bibleId";
+                return key;
+            } else if (extensionAPI.settings.get("bibleId")) {
+                bibleId = extensionAPI.settings.get("bibleId");
+            }
+            return true;
+        }
+
         // searchPrefBible
         async function searchPrefBible() {
-            let bibleBookList = extensionAPI.settings.get("bibleBookList");
-            let promptString = "Enter a search phrase";
-            let searchQuery = await prompt(promptString, null, 7);
-            var url = "https://api.scripture.api.bible/v1/bibles/" + bibleId + "/search?query=" + encodeURIComponent(searchQuery) + "&limit=100";
-            const response = await fetch(url, requestOptions);
-            if (response.ok) {
-                var data = await response.json();
-                return await createString(data, bibleBookList, false, true, false);
-            } else {
-                await prompt("Your search of API.Bible failed", null, 5, 3000);
+            var config = await checkConfig();
+            if (config == true) {
+                let bibleBookList = extensionAPI.settings.get("bibleBookList");
+                let promptString = "Enter a search phrase";
+                let searchQuery = await prompt(promptString, null, 7);
+                var url = "https://api.scripture.api.bible/v1/bibles/" + bibleId + "/search?query=" + encodeURIComponent(searchQuery) + "&limit=100";
+                const response = await fetch(url, requestOptions);
+                if (response.ok) {
+                    var data = await response.json();
+                    return await createString(data, bibleBookList, false, true, false);
+                } else {
+                    await prompt("Your search of API.Bible failed", null, 5, 3000);
+                    return;
+                }
+            } else if (config == "API") {
+                await prompt("Please set your API token in the configuration settings via the Roam Depot tab.", null, 5, 3000);
+                return;
+            } else if (config == "bibleId") {
+                await prompt("Please set your preferred Bible in the configuration settings via the Roam Depot tab.", null, 5, 3000);
+                return;
+            } else if (config == "bibleLanguage") {
+                await prompt("Please set your preferred language in the configuration settings via the Roam Depot tab.", null, 5, 3000);
                 return;
             }
         }
 
         // importBibleSection
         async function importBibleSection() {
-            let promptString = "Select a section to import";
-            let bibleBookList = extensionAPI.settings.get("bibleBookList");
-            let selectString = "<select><option value=\"\">Select</option>";
-            for (var i = 0; i < bibleBookList.length; i++) {
-                for (var j = 0; j < bibleBookList[i][4].length; j++) {
-                    selectString += "<option value=\"" + bibleBookList[i][4][j][0] + "\">" + bibleBookList[i][4][j][1] + "</option>";
+            var config = await checkConfig();
+            if (config == true) {
+                let promptString = "Select a section to import";
+                let bibleBookList = extensionAPI.settings.get("bibleBookList");
+                let selectString = "<select><option value=\"\">Select</option>";
+                for (var i = 0; i < bibleBookList.length; i++) {
+                    for (var j = 0; j < bibleBookList[i][4].length; j++) {
+                        selectString += "<option value=\"" + bibleBookList[i][4][j][0] + "\">" + bibleBookList[i][4][j][1] + "</option>";
+                    }
                 }
-            }
-            if (selectString == "<select><option value=\"\">Select</option>") {
-                await prompt("Your chosen Bible doesn't support sections", null, 5, 3000);
-                return;
-            } else {
-                selectString += "</select>";
-                let searchQuery = await prompt(promptString, selectString, 8);
-                if (searchQuery != "cancelled") {
-                    var url = "https://api.scripture.api.bible/v1/bibles/" + bibleId + "/sections/" + searchQuery + "?content-type=json&include-notes=false&include-titles=true&include-chapter-numbers=true&include-verse-numbers=true&include-verse-spans=false";
-                    const response = await fetch(url, requestOptions);
-                    if (response.ok) {
-                        var data = await response.json();
-                        return await createString(data, bibleBookList, false, false, false);
+                if (selectString == "<select><option value=\"\">Select</option>") {
+                    await prompt("Your chosen Bible doesn't support sections", null, 5, 3000);
+                    return;
+                } else {
+                    selectString += "</select>";
+                    let searchQuery = await prompt(promptString, selectString, 8);
+                    if (searchQuery != "cancelled") {
+                        var url = "https://api.scripture.api.bible/v1/bibles/" + bibleId + "/sections/" + searchQuery + "?content-type=json&include-notes=false&include-titles=true&include-chapter-numbers=true&include-verse-numbers=true&include-verse-spans=false";
+                        const response = await fetch(url, requestOptions);
+                        if (response.ok) {
+                            var data = await response.json();
+                            return await createString(data, bibleBookList, false, false, false);
+                        } else {
+                            await prompt("Import from API.Bible failed", null, 5, 3000);
+                            return;
+                        }
                     } else {
-                        await prompt("Import from API.Bible failed", null, 5, 3000);
+                        await prompt("You cancelled your search", null, 5, 3000);
                         return;
                     }
-                } else {
-                    await prompt("You cancelled your search", null, 5, 3000);
-                    return;
                 }
+            } else if (config == "API") {
+                await prompt("Please set your API token in the configuration settings via the Roam Depot tab.", null, 5, 3000);
+                return;
+            } else if (config == "bibleId") {
+                await prompt("Please set your preferred Bible in the configuration settings via the Roam Depot tab.", null, 5, 3000);
+                return;
+            } else if (config == "bibleLanguage") {
+                await prompt("Please set your preferred language in the configuration settings via the Roam Depot tab.", null, 5, 3000);
+                return;
             }
         }
 
         // importBibleSectionChapter
         async function importBibleSectionChapter() {
-            let bibleBookList = extensionAPI.settings.get("bibleBookList");
-            let selectString1 = "<select><option value=\"\">Select</option>";
-            for (var i = 0; i < bibleBookList.length; i++) {
-                for (var j = 0; j < bibleBookList[i][4].length; j++) {
-                    selectString1 += "<option value=\"" + bibleBookList[i][4][j][0] + "\">" + bibleBookList[i][4][j][1] + "</option>";
-                }
-            }
-            selectString1 += "</select>";
-            if (selectString1 == "<select><option value=\"\">Select</option></select>") {
-                await prompt("Your chosen Bible doesn't support sections", null, 5, 3000);
-                return;
-            } else {
-                // choose the chapter from which to limit selections
-                let promptString = "From which chapter is your section?";
-                let selectString = "<select><option value=\"\">Select</option>";
+            var config = await checkConfig();
+            if (config == true) {
+                let bibleBookList = extensionAPI.settings.get("bibleBookList");
+                let selectString1 = "<select><option value=\"\">Select</option>";
                 for (var i = 0; i < bibleBookList.length; i++) {
-                    selectString += "<option value=\"" + bibleBookList[i][0] + "\">" + bibleBookList[i][1] + "</option>";
+                    for (var j = 0; j < bibleBookList[i][4].length; j++) {
+                        selectString1 += "<option value=\"" + bibleBookList[i][4][j][0] + "\">" + bibleBookList[i][4][j][1] + "</option>";
+                    }
                 }
-                selectString += "</select>";
-                let searchQuery = await prompt(promptString, selectString, 6);
-                if (searchQuery != "cancelled") {
-                    let selectString2 = "<select><option value=\"\">Select</option>";
+                selectString1 += "</select>";
+                if (selectString1 == "<select><option value=\"\">Select</option></select>") {
+                    await prompt("Your chosen Bible doesn't support sections", null, 5, 3000);
+                    return;
+                } else {
+                    // choose the chapter from which to limit selections
+                    let promptString = "From which chapter is your section?";
+                    let selectString = "<select><option value=\"\">Select</option>";
                     for (var i = 0; i < bibleBookList.length; i++) {
-                        if (bibleBookList[i][0] == searchQuery) {
-                            for (var j = 0; j < bibleBookList[i][4].length; j++) {
-                                selectString2 += "<option value=\"" + bibleBookList[i][4][j][0] + "\">" + bibleBookList[i][4][j][1] + "</option>";
+                        selectString += "<option value=\"" + bibleBookList[i][0] + "\">" + bibleBookList[i][1] + "</option>";
+                    }
+                    selectString += "</select>";
+                    let searchQuery = await prompt(promptString, selectString, 6);
+                    if (searchQuery != "cancelled") {
+                        let selectString2 = "<select><option value=\"\">Select</option>";
+                        for (var i = 0; i < bibleBookList.length; i++) {
+                            if (bibleBookList[i][0] == searchQuery) {
+                                for (var j = 0; j < bibleBookList[i][4].length; j++) {
+                                    selectString2 += "<option value=\"" + bibleBookList[i][4][j][0] + "\">" + bibleBookList[i][4][j][1] + "</option>";
+                                }
                             }
                         }
-                    }
-                    selectString2 += "</select>";
-                    // get the section
-                    let promptString2 = "Select a section to import";
-                    let searchQuery2 = await prompt(promptString2, selectString2, 8);
-                    if (searchQuery2 != "cancelled") {
-                        var url = "https://api.scripture.api.bible/v1/bibles/" + bibleId + "/sections/" + searchQuery2 + "?content-type=json&include-notes=false&include-titles=true&include-chapter-numbers=true&include-verse-numbers=true&include-verse-spans=false";
-                        const response = await fetch(url, requestOptions);
-                        if (response.ok) {
-                            var data = await response.json();
-                            return await createString(data, bibleBookList, false, false, false);
+                        selectString2 += "</select>";
+                        // get the section
+                        let promptString2 = "Select a section to import";
+                        let searchQuery2 = await prompt(promptString2, selectString2, 8);
+                        if (searchQuery2 != "cancelled") {
+                            var url = "https://api.scripture.api.bible/v1/bibles/" + bibleId + "/sections/" + searchQuery2 + "?content-type=json&include-notes=false&include-titles=true&include-chapter-numbers=true&include-verse-numbers=true&include-verse-spans=false";
+                            const response = await fetch(url, requestOptions);
+                            if (response.ok) {
+                                var data = await response.json();
+                                return await createString(data, bibleBookList, false, false, false);
+                            } else {
+                                await prompt("Import from API.Bible failed", null, 5, 3000);
+                                return;
+                            }
                         } else {
-                            await prompt("Import from API.Bible failed", null, 5, 3000);
+                            await prompt("You cancelled your search", null, 5, 3000);
                             return;
                         }
                     } else {
                         await prompt("You cancelled your search", null, 5, 3000);
                         return;
                     }
-                } else {
-                    await prompt("You cancelled your search", null, 5, 3000);
-                    return;
                 }
+            } else if (config == "API") {
+                await prompt("Please set your API token in the configuration settings via the Roam Depot tab.", null, 5, 3000);
+                return;
+            } else if (config == "bibleId") {
+                await prompt("Please set your preferred Bible in the configuration settings via the Roam Depot tab.", null, 5, 3000);
+                return;
+            } else if (config == "bibleLanguage") {
+                await prompt("Please set your preferred language in the configuration settings via the Roam Depot tab.", null, 5, 3000);
+                return;
             }
         }
 
         // importBibleSectionSearch
         async function importBibleSectionSearch() {
-            let bibleBookList = extensionAPI.settings.get("bibleBookList");
-            let selectString1 = "<select><option value=\"\">Select</option>";
-            for (var i = 0; i < bibleBookList.length; i++) {
-                for (var j = 0; j < bibleBookList[i][4].length; j++) {
-                    selectString1 += "<option value=\"" + bibleBookList[i][4][j][0] + "\">" + bibleBookList[i][4][j][1] + "</option>";
+            var config = await checkConfig();
+            if (config == true) {
+                let bibleBookList = extensionAPI.settings.get("bibleBookList");
+                let selectString1 = "<select><option value=\"\">Select</option>";
+                for (var i = 0; i < bibleBookList.length; i++) {
+                    for (var j = 0; j < bibleBookList[i][4].length; j++) {
+                        selectString1 += "<option value=\"" + bibleBookList[i][4][j][0] + "\">" + bibleBookList[i][4][j][1] + "</option>";
+                    }
                 }
-            }
-            selectString1 += "</select>";
-            if (selectString1 == "<select><option value=\"\">Select</option></select>") {
-                await prompt("Your chosen Bible doesn't support sections", null, 5, 3000);
-                return;
-            } else {
-                // find matching section titles
-                let promptString = "Search string";
-                let searchQuery = await prompt(promptString, null, 7);
-                if (searchQuery != "cancelled") {
-                    var regex = new RegExp(searchQuery, "i");
-                    let selectString2 = "<select><option value=\"\">Select</option>";
-                    for (var i = 0; i < bibleBookList.length; i++) {
-                        for (var j = 0; j < bibleBookList[i][4].length; j++) {
-                            if (bibleBookList[i][4][j][1].match(regex)) {
-                                selectString2 += "<option value=\"" + bibleBookList[i][4][j][0] + "\">" + bibleBookList[i][4][j][1] + "</option>";
+                selectString1 += "</select>";
+                if (selectString1 == "<select><option value=\"\">Select</option></select>") {
+                    await prompt("Your chosen Bible doesn't support sections", null, 5, 3000);
+                    return;
+                } else {
+                    // find matching section titles
+                    let promptString = "Search string";
+                    let searchQuery = await prompt(promptString, null, 7);
+                    if (searchQuery != "cancelled") {
+                        var regex = new RegExp(searchQuery, "i");
+                        let selectString2 = "<select><option value=\"\">Select</option>";
+                        for (var i = 0; i < bibleBookList.length; i++) {
+                            for (var j = 0; j < bibleBookList[i][4].length; j++) {
+                                if (bibleBookList[i][4][j][1].match(regex)) {
+                                    selectString2 += "<option value=\"" + bibleBookList[i][4][j][0] + "\">" + bibleBookList[i][4][j][1] + "</option>";
+                                }
                             }
                         }
-                    }
-                    selectString2 += "</select>";
-                    // get the section
-                    let promptString2 = "Select a section to import";
-                    let searchQuery2 = await prompt(promptString2, selectString2, 8);
-                    if (searchQuery2 != "cancelled") {
-                        var url = "https://api.scripture.api.bible/v1/bibles/" + bibleId + "/sections/" + searchQuery2 + "?content-type=json&include-notes=false&include-titles=true&include-chapter-numbers=true&include-verse-numbers=true&include-verse-spans=false";
-                        const response = await fetch(url, requestOptions);
-                        if (response.ok) {
-                            var data = await response.json();
-                            return await createString(data, bibleBookList, false, false, false);
+                        selectString2 += "</select>";
+                        // get the section
+                        let promptString2 = "Select a section to import";
+                        let searchQuery2 = await prompt(promptString2, selectString2, 8);
+                        if (searchQuery2 != "cancelled") {
+                            var url = "https://api.scripture.api.bible/v1/bibles/" + bibleId + "/sections/" + searchQuery2 + "?content-type=json&include-notes=false&include-titles=true&include-chapter-numbers=true&include-verse-numbers=true&include-verse-spans=false";
+                            const response = await fetch(url, requestOptions);
+                            if (response.ok) {
+                                var data = await response.json();
+                                return await createString(data, bibleBookList, false, false, false);
+                            } else {
+                                await prompt("Import from API.Bible failed", null, 5, 3000);
+                                return;
+                            }
                         } else {
-                            await prompt("Import from API.Bible failed", null, 5, 3000);
+                            await prompt("You cancelled your search", null, 5, 3000);
                             return;
                         }
                     } else {
                         await prompt("You cancelled your search", null, 5, 3000);
                         return;
                     }
-                } else {
-                    await prompt("You cancelled your search", null, 5, 3000);
-                    return;
                 }
+            } else if (config == "API") {
+                await prompt("Please set your API token in the configuration settings via the Roam Depot tab.", null, 5, 3000);
+                return;
+            } else if (config == "bibleId") {
+                await prompt("Please set your preferred Bible in the configuration settings via the Roam Depot tab.", null, 5, 3000);
+                return;
+            } else if (config == "bibleLanguage") {
+                await prompt("Please set your preferred language in the configuration settings via the Roam Depot tab.", null, 5, 3000);
+                return;
             }
         }
 
         // importBiblePassage
         async function importBiblePassage() {
-            let promptString = "Enter a passage or verse to import";
-            let bibleBookList = extensionAPI.settings.get("bibleBookList");
-
-            let selectString = "<select><option value=\"\">Select</option>";
-            for (var i = 0; i < bibleBookList.length; i++) {
-                selectString += "<option value=\"" + bibleBookList[i][0] + "\">" + bibleBookList[i][1] + "</option>";
-            }
-            selectString += "</select>";
-            let searchQuery = await prompt(promptString, selectString, 4);
-            if (searchQuery != "cancelled") {
-                let queryString = searchQuery[0] + "." + searchQuery[1];
-                if (searchQuery[2] != '' && searchQuery[2] != undefined) {
-                    queryString += "." + searchQuery[2];
+            var config = await checkConfig();
+            if (config == true) {
+                let promptString = "Enter a passage or verse to import";
+                let bibleBookList = extensionAPI.settings.get("bibleBookList");
+    
+                let selectString = "<select><option value=\"\">Select</option>";
+                for (var i = 0; i < bibleBookList.length; i++) {
+                    selectString += "<option value=\"" + bibleBookList[i][0] + "\">" + bibleBookList[i][1] + "</option>";
                 }
-                queryString += "-" + searchQuery[0] + "." + searchQuery[1];
-                if (searchQuery[3] != '' && searchQuery[3] != undefined) {
-                    queryString += "." + searchQuery[3];
-                } else if (searchQuery[2] != undefined && searchQuery[3] == undefined) {
-                    queryString += "." + searchQuery[2];
-                }
-
-                var url = "https://api.scripture.api.bible/v1/bibles/" + bibleId + "/passages/" + queryString + "?content-type=json&include-notes=false&include-titles=true&include-chapter-numbers=true&include-verse-numbers=true&include-verse-spans=false&use-org-id=false";
-                const response = await fetch(url, requestOptions);
-                if (response.ok) {
-                    var data = await response.json();
-                    return await createString(data, bibleBookList, true, false, false);
+                selectString += "</select>";
+                let searchQuery = await prompt(promptString, selectString, 4);
+                if (searchQuery != "cancelled") {
+                    let queryString = searchQuery[0] + "." + searchQuery[1];
+                    if (searchQuery[2] != '' && searchQuery[2] != undefined) {
+                        queryString += "." + searchQuery[2];
+                    }
+                    queryString += "-" + searchQuery[0] + "." + searchQuery[1];
+                    if (searchQuery[3] != '' && searchQuery[3] != undefined) {
+                        queryString += "." + searchQuery[3];
+                    } else if (searchQuery[2] != undefined && searchQuery[3] == undefined) {
+                        queryString += "." + searchQuery[2];
+                    }
+    
+                    var url = "https://api.scripture.api.bible/v1/bibles/" + bibleId + "/passages/" + queryString + "?content-type=json&include-notes=false&include-titles=true&include-chapter-numbers=true&include-verse-numbers=true&include-verse-spans=false&use-org-id=false";
+                    const response = await fetch(url, requestOptions);
+                    if (response.ok) {
+                        var data = await response.json();
+                        return await createString(data, bibleBookList, true, false, false);
+                    } else {
+                        await prompt("Your search of API.Bible failed", null, 5, 3000);
+                        return;
+                    }
                 } else {
-                    await prompt("Your search of API.Bible failed", null, 5, 3000);
+                    await prompt("You cancelled your search", null, 5, 3000);
                     return;
                 }
-            } else {
-                await prompt("You cancelled your search", null, 5, 3000);
+            } else if (config == "API") {
+                await prompt("Please set your API token in the configuration settings via the Roam Depot tab.", null, 5, 3000);
+                return;
+            } else if (config == "bibleId") {
+                await prompt("Please set your preferred Bible in the configuration settings via the Roam Depot tab.", null, 5, 3000);
+                return;
+            } else if (config == "bibleLanguage") {
+                await prompt("Please set your preferred language in the configuration settings via the Roam Depot tab.", null, 5, 3000);
                 return;
             }
         }
 
         // importRandomVerse
         async function importRandomVerse() {
-            let bibleBookList = extensionAPI.settings.get("bibleBookList");
-            var randomBook = bibleBookList[Math.floor(Math.random() * bibleBookList.length)];
-            var randomChapter = Math.floor(Math.random() * randomBook[3]);
-            if (randomChapter < 1) {
-                randomChapter = 1;
-            }
-
-            var url = "https://api.scripture.api.bible/v1/bibles/" + bibleId + "/chapters/" + randomBook[0] + "." + randomChapter + "/verses";
-            const response = await fetch(url, requestOptions);
-            if (response.ok) {
-                var data = await response.json();
-                data = data.data;
-                var randomVerse = data[Math.floor(Math.random() * data.length)];
-                var url1 = "https://api.scripture.api.bible/v1/bibles/" + bibleId + "/verses/" + randomVerse.id + "?content-type=json&include-notes=false&include-titles=true&include-chapter-numbers=false&include-verse-numbers=true&include-verse-spans=false&use-org-id=false";
-                const response1 = await fetch(url1, requestOptions);
-                if (response1.ok) {
-                    var data1 = await response1.json();
-                    return await createString(data1, bibleBookList, true, false, true);
+            var config = await checkConfig();
+            if (config == true) {
+                let bibleBookList = extensionAPI.settings.get("bibleBookList");
+                var randomBook = bibleBookList[Math.floor(Math.random() * bibleBookList.length)];
+                var randomChapter = Math.floor(Math.random() * randomBook[3]);
+                if (randomChapter < 1) {
+                    randomChapter = 1;
+                }
+    
+                var url = "https://api.scripture.api.bible/v1/bibles/" + bibleId + "/chapters/" + randomBook[0] + "." + randomChapter + "/verses";
+                const response = await fetch(url, requestOptions);
+                if (response.ok) {
+                    var data = await response.json();
+                    data = data.data;
+                    var randomVerse = data[Math.floor(Math.random() * data.length)];
+                    var url1 = "https://api.scripture.api.bible/v1/bibles/" + bibleId + "/verses/" + randomVerse.id + "?content-type=json&include-notes=false&include-titles=true&include-chapter-numbers=false&include-verse-numbers=true&include-verse-spans=false&use-org-id=false";
+                    const response1 = await fetch(url1, requestOptions);
+                    if (response1.ok) {
+                        var data1 = await response1.json();
+                        return await createString(data1, bibleBookList, true, false, true);
+                    } else {
+                        await prompt("Failed to get a random verse from API.Bible", null, 5, 3000);
+                        return;
+                    }
                 } else {
                     await prompt("Failed to get a random verse from API.Bible", null, 5, 3000);
                     return;
                 }
-            } else {
-                await prompt("Failed to get a random verse from API.Bible", null, 5, 3000);
+            } else if (config == "API") {
+                await prompt("Please set your API token in the configuration settings via the Roam Depot tab.", null, 5, 3000);
+                return;
+            } else if (config == "bibleId") {
+                await prompt("Please set your preferred Bible in the configuration settings via the Roam Depot tab.", null, 5, 3000);
+                return;
+            } else if (config == "bibleLanguage") {
+                await prompt("Please set your preferred language in the configuration settings via the Roam Depot tab.", null, 5, 3000);
                 return;
             }
         }
@@ -952,7 +1048,6 @@ export default {
                     }
                 }
             } else {
-                console.info(data, bibleBookList, passage, verseSearch, random);
                 var title;
                 var string = "> ";
                 if (!passage && !random) {
@@ -963,7 +1058,7 @@ export default {
                 for (var i = 0; i < content.length; i++) {
                     if (content[i].attrs.style == "c") {
                         string += "#bible_chapter^^" + content[i].items[0].text + "^^ ";
-                    } else if (content[i].attrs.style == "q") {
+                    } else if (content[i].attrs.style == "q" || content[i].attrs.style == "q1" || content[i].attrs.style == "q2") {
                         /*if ((i < content.length - 1 && content[i - 1].attrs.style != "q")) {
                             string += "\n\n";
                         }*/
@@ -981,10 +1076,10 @@ export default {
                             }
                         }
                         string += "\n";
-                        if ((i < content.length - 1 && content[i + 1].attrs.style != "q") || (i == content.length - 1)) {
+                        if ((i < content.length - 1 && (content[i + 1].attrs.style != "q" && content[i + 1].attrs.style != "q1" && content[i + 1].attrs.style != "q2")) || (i == content.length - 1)) {
                             string += "\n";
                         }
-                    } else if (content[i].attrs.style != "s" && content[i].attrs.style != "b") {
+                    } else if (content[i].attrs.style != "s" && content[i].attrs.style != "s1" && content[i].attrs.style != "s2" && content[i].attrs.style != "b" && content[i].attrs.style != "r") {
                         for (var j = 0; j < content[i].items.length; j++) {
                             if (content[i].items[j].attrs.style == "v") {
                                 if (content[i].items[j].items[0].text != "1") {
@@ -992,9 +1087,9 @@ export default {
                                 } else if (content[i].items[j].items[0].text == "1" && random) {
                                     string += "#bible_verse^^" + content[i].items[j].items[0].text + "^^ ";
                                 }
-                            } else if (content[i].items[j].attrs.style == "wj") {
+                            } else if (content[i].items[j].attrs.style === "wj") {
                                 string += content[i].items[j].items[0].text;
-                            } else {
+                            } else if (content[i].items[j].attrs.style != "add") {
                                 string += content[i].items[j].text;
                             }
                         }
@@ -1003,6 +1098,7 @@ export default {
                         }
                     }
                 }
+                string = string.replaceAll("  ", " ");
                 var reference = "";
                 if (passage) {
                     reference = data.data.reference;
@@ -1021,7 +1117,6 @@ export default {
                 }
 
                 string += "" + reference + "";
-                console.info(string);
                 return string;
             }
         }
@@ -1253,6 +1348,16 @@ async function prompt(string, selectString, type, duration) {
                 ]
             });
         })
+    }
+}
+
+function sendConfigAlert(key) {
+    if (key == "API") {
+        alert("Please set your API token in the configuration settings via the Roam Depot tab.");
+    } else if (key == "bibleId") {
+        alert("Please set your preferred Bible in the configuration settings via the Roam Depot tab.");
+    } else if (key == "bibleLanguage") {
+        alert("Please set your preferred language in the configuration settings via the Roam Depot tab.");
     }
 }
 
