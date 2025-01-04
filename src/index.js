@@ -1224,6 +1224,7 @@ export default {
                 }
                 var content = data.data.content;
                 for (var i = 0; i < content.length; i++) {
+                    console.info(content[i]);
                     if (content[i].attrs.style == "c") {
                         string += "#bible_chapter^^" + content[i].items[0].text + "^^ ";
                     } else if (content[i].attrs.style == "q" || content[i].attrs.style == "q1" || content[i].attrs.style == "q2") {
