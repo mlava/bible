@@ -944,7 +944,7 @@ export default {
                                 } else if (content[i].items[j].items[0].text == "1" && random) {
                                     string += "#bible_verse^^" + content[i].items[j].items[0].text + "^^ ";
                                 }
-                            } else if (content[i].items[j].attrs.style === "wj" || content[i].items[j].attrs.style == "sc" || content[i].items[j].attrs.style == "add" || content[i].items[j].attrs.style == "nd") {
+                            } else if (content[i].items[j].attrs.style === "wj" || content[i].items[j].attrs.style == "sc" || content[i].items[j].attrs.style == "w" || content[i].items[j].attrs.style == "add" || content[i].items[j].attrs.style == "nd") {
                                 string += content[i].items[j].items[0].text;
                             } else  {
                                 string += content[i].items[j].text;
