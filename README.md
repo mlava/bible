@@ -11,6 +11,8 @@ Then, select your preferred language. This will call the API.Bible api and retri
 
 Not all Bible versions in the API have all Books and only some have Bible 'sections' - a series of verses that form a specific story. e.g. 
 
+The full list of editions and languages available can be found at https://docs.api.bible/guides/bibles/.
+
 <img width="718" alt="image" src="https://github.com/user-attachments/assets/17dc035f-ab0e-4d07-9647-c0f0163b5041" />
 
 You then have several options available to get scripture into your graph:
